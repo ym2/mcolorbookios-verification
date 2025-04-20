@@ -121,6 +121,7 @@
       const params = new URLSearchParams(window.location.search);
       const token = params.get('token');
       const type = params.get('type');
+      const code = params.get('code');
       const redirectTo = params.get('redirect_to');
       const error = params.get('error');
       const errorCode = params.get('error_code');
@@ -133,6 +134,7 @@
           URL: ${url}<br>
           Has token: ${token ? 'Yes' : 'No'}<br>
           Has type: ${type ? 'Yes' : 'No'}<br>
+          Has code: ${code ? 'Yes' : 'No'}<br>
           Has redirect_to: ${redirectTo ? 'Yes' : 'No'}<br>
           Has error: ${error ? 'Yes' : 'No'}<br>
           Error code: ${errorCode || 'none'}<br>
@@ -164,11 +166,18 @@
         document.getElementById('openAppButton').innerHTML = 'Return to mColorBook App';
       }
 
-      // Verify the email
+      // Verify if we have a code parameter (PKCE flow)
+      if (code) {
+        // This is a callback with an authorization code - show success
+        showSuccess();
+        return;
+      }
+
+      // Verify if we have token and type (OTP flow)
       if (token && type) {
         verifyEmail();
-      } else if (!error && !errorCode) {
-        // Only show the generic error if we don't already have specific error params
+      } else if (!error && !errorCode && !code) {
+        // Only show the generic error if we don't already have specific error params or a code
         showError('Invalid verification link. Missing token or type parameters. Check the URL in your email.');
       }
 
