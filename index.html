@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>mColorBook - Email Verification</title>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 20px;
+      text-align: center;
+      background-color: #f7f7f7;
+    }
+    .container {
+      background-color: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      margin-top: 40px;
+    }
+    .logo {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      color: #0071e3;
+    }
+    .title {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      color: #333;
+    }
+    .success {
+      color: #10B981;
+      font-weight: 600;
+    }
+    .error {
+      color: #EF4444;
+      font-weight: 600;
+    }
+    .button {
+      display: block;
+      background-color: #0284C7;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 500;
+      margin: 24px auto 0;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(0,0,0,0.3);
+      border-radius: 50%;
+      border-top-color: #0284C7;
+      animation: spin 1s ease-in-out infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .footnote {
+      margin-top: 16px;
+      font-size: 14px;
+      color: #6B7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">🎨</div>
+    <h1 class="title">mColorBook Email Verification</h1>
+    
+    <div id="loading">
+      <div class="loading"></div>
+      <p>Verifying your email...</p>
+    </div>
+    
+    <div id="success" style="display:none;">
+      <p class="success">Your email has been successfully verified!</p>
+      <p>Your account is now active.</p>
+      <a id="openAppButton" href="mcolorbook://auth/callback" class="button">Open mColorBook App</a>
+      <p class="footnote">If the button doesn't work, please open the mColorBook app manually.</p>
+    </div>
+    
+    <div id="error" style="display:none;">
+      <p class="error">Verification failed</p>
+      <p id="errorMessage">There was a problem verifying your email. The link may be expired or invalid.</p>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Supabase client - make sure to use the right module
+    document.addEventListener('DOMContentLoaded', function() {
+      // Parse URL parameters
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token');
+      const type = params.get('type');
+      const redirectTo = params.get('redirect_to');
+
+      // Check if Supabase is loaded
+      if (typeof supabase === 'undefined') {
+        showError('Supabase library failed to load. Please try again later.');
+        return;
+      }
+
+      // Initialize Supabase client
+      const supabaseUrl = 'https://xgthudkwetdrortwtwop.supabase.co';
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhndGh1ZGt3ZXRkcm9ydHd0d29wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMxNDE2OTQsImV4cCI6MjA1ODcxNzY5NH0.AQzck_QYs0SalI2Hi4O7XQkJNLbmmqo9hI8Wxy9MOPk';
+      const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+      // Mobile detection
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      if (isIOS) {
+        document.getElementById('openAppButton').innerHTML = 'Return to mColorBook App';
+      }
+
+      // Verify the email
+      verifyEmail();
+
+      async function verifyEmail() {
+        try {
+          if (!token || !type) {
+            throw new Error('Invalid verification link. Missing token or type parameters.');
+          }
+
+          // Call Supabase to verify the token
+          const { error } = await supabaseClient.auth.verifyOtp({
+            token_hash: token,
+            type: type
+          });
+
+          if (error) {
+            throw error;
+          }
+
+          // Show success
+          showSuccess();
+
+          // Try to redirect to app after a delay on iOS
+          if (isIOS && redirectTo) {
+            setTimeout(() => {
+              window.location.href = redirectTo;
+            }, 1500);
+          }
+        } catch (error) {
+          // Show error
+          showError(error.message || 'Verification failed');
+          console.error('Verification error:', error);
+        }
+      }
+    });
+
+    function showSuccess() {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('success').style.display = 'block';
+    }
+
+    function showError(message) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').style.display = 'block';
+      document.getElementById('errorMessage').textContent = message;
+    }
+  </script>
+</body>
+</html>
